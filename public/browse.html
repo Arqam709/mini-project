@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+
+
+        <!-- link to browse.css for styling-->
+        <link rel="stylesheet" href="browse.css">
+        <link rel="stylesheet" href="style.css">
+    
+        <title>Browse Books | Your Library</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Add Font Awesome for icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">  
+        
+
+
+</head>
+<body class="browse-page">
+
+  <div class="page-content" style="flex: 1 0 auto;">
+
+    <!-- ===== 1. TOP NAVIGATION BAR ===== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="browse.html">
+                <i class="fas fa-book-open me-2"></i>Your Library
+            </a>
+            
+            <!-- Search Bar -->
+            <form class="d-flex mx-3 flex-grow-1" onsubmit="event.preventDefault(); searchBook();">
+              <input id="searchInput" class="form-control me-2" type="search" placeholder="Search books..." aria-label="Search">
+              <button class="btn btn-outline-light" type="submit">Search</button>
+            </form>
+            
+           
+
+                 <a href="borrow.html" class="btn btn-outline-light">
+                  🛒 
+                  Borrowed: <span id="borrowCount" aria-live="polite">0</span> | 
+                  Bought:   <span id="buyCount"   aria-live="polite">0</span>
+                </a>
+                
+                <!-- Empty Cart Warning Message (Initially Hidden) --> 
+                 <div id="emptyCartMessage" class="alert alert-warning d-none" role="alert">
+                  You must add books to the Buy cart before proceeding to checkout.
+                </div>
+                 
+           </div>
+
+        </div>
+
+    </nav>
+
+  </div>
+
+
+  <div id="bookGrid" class="row row-cols-1 row-cols-md-3 g-4"></div>
+</div>
+
+  </div> 
+  
+  <footer class="bg-dark text-white mt-auto py-4">
+    <div class="container">
+      <div class="row">
+        <!--  Subscribe Form -->
+        <div class="col-md-4">
+          <form id="subscribe-form" class="border p-3 rounded shadow-sm bg-light text-dark">
+            <h5 class="mb-3">📬 Stay Updated</h5>
+            <input type="text" id="sub-name" class="form-control mb-2" placeholder="Your name" required>
+            <input type="email" id="sub-email" class="form-control mb-2" placeholder="Your email" required>
+            <button type="submit" class="btn btn-primary w-100">Subscribe</button>
+            <!-- ✅ Message area for feedback -->
+            <div id="subscribe-msg" class="mt-2 small text-success text-center"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="main.js"></script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      loadBooks(); // ✅ Load books dynamically on page load
+    });
+  </script>
+
+<!-- js for subscribe form -->
+<script>
+  document.getElementById("subscribe-form")?.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const name = document.getElementById("sub-name").value.trim();
+    const email = document.getElementById("sub-email").value.trim();
+    const messageDiv = document.getElementById("subscribe-msg");
+
+    if (!name || !email) return;
+
+    try {
+      await fetch("/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email })
+      });
+
+      document.getElementById("subscribe-form").reset();
+
+      if (messageDiv) {
+        messageDiv.textContent = "✔ You’re subscribed!";
+        messageDiv.classList.remove("text-danger");
+        messageDiv.classList.add("text-success");
+
+        // Hide after 5 seconds 
+        setTimeout(() => messageDiv.textContent = "", 5000);
+      }
+
+    } catch (err) {
+      console.error("❌ Subscription error:", err);
+      if (messageDiv) {
+        messageDiv.textContent = "Something went wrong.";
+        messageDiv.classList.add("text-danger");
+      }
+    }
+  });
+</script>
+</body>
+</html>
