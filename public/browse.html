@@ -44,10 +44,7 @@
                   Bought:   <span id="buyCount"   aria-live="polite">0</span>
                 </a>
                 
-                <!-- Empty Cart Warning Message (Initially Hidden) --> 
-                 <div id="emptyCartMessage" class="alert alert-warning d-none" role="alert">
-                  You must add books to the Buy cart before proceeding to checkout.
-                </div>
+                
                  
            </div>
 
@@ -59,7 +56,7 @@
 
 
   <div id="bookGrid" class="row row-cols-1 row-cols-md-3 g-4"></div>
-</div>
+</div>  <!---loading books -->
 
   </div> 
   
@@ -82,7 +79,9 @@
   </footer>
 
   <script src="script.js"></script>
-  <script src="main.js"></script>
+  <script src="main.js"></script> 
+  
+  
 
   <script>
     window.addEventListener("DOMContentLoaded", () => {
@@ -95,20 +94,23 @@
   document.getElementById("subscribe-form")?.addEventListener("submit", async function (e) {
     e.preventDefault();
 
-    const name = document.getElementById("sub-name").value.trim();
-    const email = document.getElementById("sub-email").value.trim();
+    const name = document.getElementById("sub-name").value.trim(); //getting name 
+    const email = document.getElementById("sub-email").value.trim(); //getting email
     const messageDiv = document.getElementById("subscribe-msg");
-
+    
+    // If either name or email is empty, we don't proceed and exit the function.
     if (!name || !email) return;
 
     try {
+      // Send a POST request to the server to subscribe the user with their name and email.
+      // The body is sent in JSON format with the name and email values.
       await fetch("/subscribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email })
+        headers: { "Content-Type": "application/json" }, // Set content type to JSON.
+        body: JSON.stringify({ name, email }) //converting the data type in json string 
       });
 
-      document.getElementById("subscribe-form").reset();
+      document.getElementById("subscribe-form").reset(); // If the subscription is successful, reset the form fields.
 
       if (messageDiv) {
         messageDiv.textContent = "✔ You’re subscribed!";

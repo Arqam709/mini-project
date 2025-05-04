@@ -29,25 +29,42 @@ app.post("/register", (req, res) => {
     // Save user's name into session
     req.session.userName = user.name;
 
-    // Save user's info to users.json
+    // Read existing users from file
     fs.readFile(USERS_FILE, (err, data) => {
         let users = [];
-        if (!err && data.length > 0) users = JSON.parse(data);
+
+        if (!err && data.length > 0) {
+            try {
+                users = JSON.parse(data);
+            } catch (e) {
+                return res.status(500).json({ message: "Error parsing user data." });
+            }
+        }
+
+        // 🔍 Check for conflicts
+        const emailUsed = users.some(u => u.email === user.email);
+        const nameUsed = users.some(u => u.name === user.name);
+
+        if (emailUsed && nameUsed) {
+            return res.status(400).json({ message: "❌ This name and email are already registered." });
+        } else if (emailUsed) {
+            return res.status(400).json({ message: "❌ This email is already in use. Please use a different email address." });
+        } else if (nameUsed) {
+            return res.status(400).json({ message: "❌ This name is already in use. Please use a different name." });
+        }
+
+        // ✅ No conflict, save new user
         users.push(user);
-        fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), () => {
-            res.json({ message: "User registered successfully!" });
+        fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), (writeErr) => {
+            if (writeErr) {
+                return res.status(500).json({ message: "Error saving user." });
+            }
+            res.json({ message: "✅ User registered successfully!" });
         });
     });
 });
 
 
-app.get("/user-session", (req, res) => {
-    if (req.session.userName) {
-        res.json({ name: req.session.userName });
-    } else {
-        res.json({ name: null });
-    }
-});
 //Route to get the list of books (GET request)
 
 app.get("/books", (req, res) => {
@@ -104,6 +121,7 @@ app.post("/subscribe", (req, res) => {
       fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(subscribers, null, 2), (err) => {
         if (err) return res.status(500).json({ message: "Error saving subscription." });
         res.json({ message: "✅ Subscribed." });
+
       });
     });
   });
@@ -121,7 +139,7 @@ app.get("/check-timeout", (req, res) => {
     }
 
     const elapsed = currentTime - req.session.timeoutStart;
-    if (elapsed > TIMEOUT_LIMIT) {
+    if (elapsed > TIMEOUT_LIMI) {
         req.session.destroy();
         res.json({ timeout: true, message: "Session expired." });
     } else {

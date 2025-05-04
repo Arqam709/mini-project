@@ -1,77 +1,113 @@
-//1) loading books and displaying them
 function loadBooks() {
-    fetch("/books")
-      .then(res => res.json())
-      .then(books => {
-        const container = document.getElementById("bookGrid");
-        container.innerHTML = "";
+  fetch("/books")
+    .then(res => res.json())
+    .then(books => {
+      const container = document.getElementById("bookGrid");
+      container.innerHTML = "";
+
+      const buyCart = JSON.parse(localStorage.getItem("buyCart")) || [];
+      const borrowCart = JSON.parse(localStorage.getItem("borrowCart")) || [];
+
+      books.forEach(book => {
+        const { title, author, cover, price } = book;
+        const alreadyBought = buyCart.some(b => b.title === title);
+        const alreadyBorrowed = borrowCart.some(b => b.title === title);
+
+        const card = document.createElement("div");
+        card.className = "col";
+
+        const cardInner = document.createElement("div");
+        cardInner.className = "card h-100 shadow-sm";
+        cardInner.style.maxWidth = "180px";
+        cardInner.style.margin = "auto";
+
+        const img = document.createElement("img");
+        img.src = cover;
+        img.alt = title;
+        img.className = "card-img-top";
+        img.style.height = "200px";
+        img.style.objectFit = "cover";
+
+        const body = document.createElement("div");
+        body.className = "card-body p-2 text-center";
+
+        const titleEl = document.createElement("h6");
+        titleEl.className = "card-title mb-1";
+        titleEl.textContent = title;
+
+        const authorEl = document.createElement("small");
+        authorEl.className = "text-muted";
+        authorEl.textContent = author;
+
+        const priceEl = document.createElement("div");
+        priceEl.className = "text-success fw-bold";
+        priceEl.textContent = price;
+
+        const buttonGroup = document.createElement("div");
+        buttonGroup.className = "mt-2 d-grid gap-2";
+
+        // --- Buy Button ---
+        const buyBtn = document.createElement("button");
+        buyBtn.className = `btn btn-sm ${alreadyBorrowed ? 'btn-secondary' : 'btn-outline-success'}`;
+        buyBtn.textContent = "Buy";
+        if (alreadyBorrowed) {
+          buyBtn.disabled = true;
+          buyBtn.title = "Already in Borrow cart";
+        } else {
+          buyBtn.onclick = () => handleBuy(title, author, cover, price);
+        }
+
+        // --- Borrow Button ---
+        const borrowBtn = document.createElement("button");
+        borrowBtn.className = `btn btn-sm ${alreadyBought ? 'btn-secondary' : 'btn-outline-primary'}`;
+        borrowBtn.textContent = "Borrow";
+        if (alreadyBought) {
+          borrowBtn.disabled = true;
+          borrowBtn.title = "Already in Buy cart";
+        } else {
+          borrowBtn.onclick = () => handleBorrow(title, author, cover);
+        }
+
+        // Append all
+        buttonGroup.appendChild(buyBtn);
+        buttonGroup.appendChild(borrowBtn);
+        body.append(titleEl, authorEl, document.createElement("br"), priceEl, buttonGroup);
+        cardInner.append(img, body);
+        card.appendChild(cardInner);
+        container.appendChild(card);
+      });
+    })
+    .catch(err => console.error("Error fetching books:", err));
+}
+
   
-        books.forEach(book => {
-          const { title, author, cover, price } = book;
-          const card = document.createElement("div");
-          card.className = "col";
-  
-          card.innerHTML = `
-            <div class="card h-100 shadow-sm" style="max-width: 180px; margin: auto;">
-              <img src="${cover}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="${title}">
-              <div class="card-body p-2 text-center">
-                <h6 class="card-title mb-1">${title}</h6>
-                <small class="text-muted">${author}</small><br>
-                <strong class="text-success">${price}</strong>
-                <div class="mt-2 d-grid gap-2">
-                  <button class="btn btn-sm btn-outline-success"
-                          onclick="handleBuy('${title.replace(/'/g, "\\'")}', '${author.replace(/'/g, "\\'")}', '${cover}', '${price}')">
-                    Buy
-                  </button>
-                  <button class="btn btn-sm btn-outline-primary"
-                          onclick="handleBorrow('${title.replace(/'/g, "\\'")}', '${author.replace(/'/g, "\\'")}', '${cover}')">
-                    Borrow
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-  
-          container.appendChild(card);
-        });
-      })
-      .catch(err => console.error("Error fetching books:", err));
-  }
-  
-  // ── 2) Show a temporary confirmation bar ──
-  function showConfirm(message) {
-    const bar = document.getElementById("actionConfirmBar");
-    const msg = document.getElementById("confirmMessage");
-    msg.innerHTML = message;
-    bar.classList.remove("d-none");
-    setTimeout(() => bar.classList.add("d-none"), 5000);
-  }
+ 
 
 
-// ── 3) Cart Action Handlers ──
 function handleBuy(title, author, cover, price) {
   const cart = JSON.parse(localStorage.getItem("buyCart")) || [];
 
   if (!cart.find(book => book.title === title)) {
-    cart.push({ title, author, cover, price }); // ✅ use correct 'cover' variable
+    cart.push({ title, author, cover, price });
     localStorage.setItem("buyCart", JSON.stringify(cart));
   }
 
   updateCartCounts();
-  showConfirm(`${title} added to your <strong>Buy</strong> cart.`);
+  loadBooks(); // ✅ Refresh UI to disable Borrow button for this book
 }
 
 function handleBorrow(title, author, coverUrl) {
   const cart = JSON.parse(localStorage.getItem("borrowCart")) || [];
 
   if (!cart.find(book => book.title === title)) {
-    cart.push({ title, author, cover: coverUrl }); // ✅ already correct
+    cart.push({ title, author, cover: coverUrl });
     localStorage.setItem("borrowCart", JSON.stringify(cart));
   }
 
   updateCartCounts();
-  showConfirm(`${title} added to your <strong>Borrow</strong> list.`);
+  loadBooks(); // ✅ Refresh UI to disable Buy button for this book
 }
+
 
 // ── 3.1) Updating Cart Counts ──
 function updateCartCounts() {
@@ -87,7 +123,7 @@ function updateCartCounts() {
   if (borrowIcon) borrowIcon.setAttribute("data-count", borrowCart.length);
   if (buyIcon) buyIcon.setAttribute("data-count", buyCart.length);
 
-  updateCheckoutButton(buyCart, borrowCart); // ✅ pass both carts
+  //updateCheckoutButton(buyCart, borrowCart); // ✅ pass both carts
 }
 
 // ── 3.2) Resetting Cart to Default ──
@@ -104,7 +140,7 @@ function resetCartToDefault() {
   renderBuyList([]);
 }
 
-//here the remove code 
+
 
 // ── 3.4) Load Cart Counts on Page Load WITHOUT Clearing Carts ──
 window.addEventListener("load", function () {
